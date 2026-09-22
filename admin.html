@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#111827">
+  <title>Admin — Gaming Shop</title>
+  <link rel="icon" id="adminFavicon" href="data:,">
+  <link rel="stylesheet" href="/admin.css">
+</head>
+<body>
+  <div id="toast" class="toast"></div>
+  <div id="loginView" class="login-view">
+    <div class="login-card">
+      <div class="login-mark">G</div>
+      <span class="eyebrow">PRIVATE ADMIN</span>
+      <h1>Quản trị shop</h1>
+      <p>Quản lý sản phẩm, đơn hàng và tùy chỉnh toàn bộ giao diện shop từ một nơi.</p>
+      <form id="loginForm" class="stack-form">
+        <label>Email<input name="email" type="email" placeholder="admin@example.com" required autocomplete="username"></label>
+        <label>Mật khẩu<input name="password" type="password" placeholder="••••••••" required autocomplete="current-password"></label>
+        <button class="btn primary" type="submit">Đăng nhập Admin</button>
+      </form>
+      <a class="back-link" href="/">← Về shop</a>
+    </div>
+  </div>
+
+  <div id="adminView" class="admin-shell hidden">
+    <aside class="sidebar">
+      <div class="side-brand">
+        <div class="side-logo" id="sideLogo">G</div>
+        <div><strong id="sideShopName">Gaming Shop</strong><small>Admin Panel</small></div>
+      </div>
+      <nav class="side-nav">
+        <button data-page="dashboard" class="active"><span>⌂</span>Tổng quan</button>
+        <button data-page="products"><span>▦</span>Sản phẩm</button>
+        <button data-page="orders"><span>◫</span>Đơn hàng</button>
+        <button data-page="topups"><span>＋</span>Nạp tiền</button>
+        <button data-page="design"><span>✦</span>Giao diện shop</button>
+      </nav>
+      <div class="side-bottom">
+        <a href="/" target="_blank" class="side-link">↗ Mở shop</a>
+        <button id="logoutBtn" class="side-link danger-link">Đăng xuất</button>
+      </div>
+    </aside>
+
+    <div class="content-wrap">
+      <header class="topbar">
+        <div>
+          <span class="eyebrow" id="pageEyebrow">DASHBOARD</span>
+          <h2 id="pageTitle">Tổng quan</h2>
+        </div>
+        <div class="top-actions">
+          <span class="admin-user" id="adminName">Admin</span>
+          <div class="admin-avatar" id="adminAvatar">A</div>
+        </div>
+      </header>
+      <main id="content" class="content"></main>
+    </div>
+  </div>
+
+<script src="/admin.js"></script>
+</body>
+</html>
