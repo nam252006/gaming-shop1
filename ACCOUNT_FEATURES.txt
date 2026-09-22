@@ -1,0 +1,8 @@
+ACCOUNT V2
+
+- Trang /account với sidebar theo nhóm: Tài khoản, Giao dịch, Tiện ích.
+- Profile, bảo mật, đổi mật khẩu, đơn hàng, biến động số dư, nhật ký hoạt động.
+- Favorites lưu theo localStorage của trình duyệt hiện tại.
+- Support ticket lưu trong data.json qua API.
+- Referral link theo user ID.
+- Root deployment hỗ trợ account.js/cart.js/customer-pages.css.

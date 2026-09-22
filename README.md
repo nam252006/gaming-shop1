@@ -34,7 +34,3 @@ Render:
 - Build Command: `npm install`
 - Start Command: `npm start`
 
-
-
-### Deployment note
-This build supports repositories that keep frontend files at the repository root. It explicitly serves customer-pages.css, cart.js, and account.js so /cart and /account load their styling and behavior correctly.

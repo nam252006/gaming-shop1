@@ -49,19 +49,16 @@ const HAS_PUBLIC_APP = fs.existsSync(path.join(PUBLIC_DIR, "index.html"));
 if (HAS_PUBLIC_APP) {
   app.use(express.static(PUBLIC_DIR));
 } else {
-  // The current GitHub repo keeps frontend files at the repository root.
-  // Serve only the browser assets explicitly (never expose server.js/data.json).
   const rootFile = (name) => (req, res) => res.sendFile(path.join(__dirname, name));
-  const rootAssets = [
-    "styles.css", "customer-pages.css", "app.js",
-    "cart.js", "account.js",
-    "admin.css", "admin.js"
-  ];
-  for (const asset of rootAssets) {
-    app.get("/" + asset, rootFile(asset));
-  }
+  app.get("/styles.css", rootFile("styles.css"));
+  app.get("/app.js", rootFile("app.js"));
   app.get("/index.html", rootFile("index.html"));
+  app.get("/admin.css", rootFile("admin.css"));
+  app.get("/admin.js", rootFile("admin.js"));
   app.get("/admin.html", rootFile("admin.html"));
+  app.get("/account.js", rootFile("account.js"));
+  app.get("/cart.js", rootFile("cart.js"));
+  app.get("/customer-pages.css", rootFile("customer-pages.css"));
 }
 
 // IMPORTANT: this must be registered before the SPA fallback below,
@@ -249,6 +246,7 @@ if (!Array.isArray(db.users)) db.users = [];
 if (!Array.isArray(db.products)) db.products = [];
 if (!Array.isArray(db.orders)) db.orders = [];
 if (!Array.isArray(db.topups)) db.topups = [];
+if (!Array.isArray(db.tickets)) db.tickets = [];
 if (!db.settings) db.settings = { ...DEFAULT_SETTINGS };
 db.settings = normalizeSettings(db.settings);
 if (!db.users.some(u => u.email === ADMIN_EMAIL)) {
@@ -288,7 +286,8 @@ app.post("/api/register", (req, res) => {
     password: hashPassword(password),
     role: "user",
     balance: 0,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
+    activity: []
   };
   db.users.push(u);
   saveDB(db);
@@ -302,7 +301,11 @@ app.post("/api/login", (req, res) => {
     x => x.email.toLowerCase() === String(email || "").toLowerCase() && x.password === hashPassword(password || "")
   );
   if (!u) return res.status(401).json({ error: "Email hoặc mật khẩu không đúng." });
-  u.lastLoginAt = new Date().toISOString();
+  const now = new Date().toISOString();
+  u.lastLoginAt = now;
+  if (!Array.isArray(u.activity)) u.activity = [];
+  u.activity.unshift({ id: crypto.randomUUID(), type: "login", title: "Đăng nhập vào website", createdAt: now, ip: String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "").split(",")[0].trim(), userAgent: String(req.headers["user-agent"] || "") });
+  u.activity = u.activity.slice(0, 100);
   saveDB(db);
   res.json({ token: tokenFor(u), user: publicUser(u) });
 });
@@ -322,13 +325,9 @@ app.get("/api/account/summary", auth, (req, res) => {
     ...topups.map(t => ({ id: t.id, type: "topup", title: "Nạp tiền vào ví", amount: Number(t.amount || 0), status: t.status, createdAt: t.createdAt })),
     ...orders.map(o => ({ id: o.id, type: "purchase", title: `Thanh toán đơn ${o.id}`, amount: -Number(o.total || 0), status: o.status, createdAt: o.createdAt }))
   ].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  res.json({
-    user: publicUser(req.user),
-    totals: { approvedTopup, spent, orders: orders.length, transactions: transactions.length },
-    orders,
-    topups,
-    transactions
-  });
+  const activity = Array.isArray(req.user.activity) ? req.user.activity.slice(0, 100) : [];
+  const tickets = db.tickets.filter(t => t.userId === req.user.id).sort((a,b) => b.createdAt.localeCompare(a.createdAt));
+  res.json({ user: publicUser(req.user), totals: { approvedTopup, spent, orders: orders.length, transactions: transactions.length }, orders, topups, transactions, activity, tickets });
 });
 
 app.put("/api/account/profile", auth, (req, res) => {
@@ -339,6 +338,9 @@ app.put("/api/account/profile", auth, (req, res) => {
   if (req.body.fullName !== undefined) u.fullName = String(req.body.fullName).trim().slice(0, 120);
   if (req.body.phone !== undefined) u.phone = String(req.body.phone).trim().slice(0, 40);
   if (req.body.telegram !== undefined) u.telegram = String(req.body.telegram).trim().slice(0, 100);
+  if (!Array.isArray(u.activity)) u.activity = [];
+  u.activity.unshift({ id: crypto.randomUUID(), type: "profile", title: "Cập nhật thông tin tài khoản", createdAt: new Date().toISOString(), ip: "", userAgent: "" });
+  u.activity = u.activity.slice(0, 100);
   saveDB(db);
   res.json(publicUser(u));
 });
@@ -351,8 +353,39 @@ app.post("/api/account/password", auth, (req, res) => {
   const u = db.users.find(x => x.id === req.user.id);
   if (!u || u.password !== hashPassword(currentPassword)) return res.status(400).json({ error: "Mật khẩu hiện tại không đúng." });
   u.password = hashPassword(newPassword);
+  if (!Array.isArray(u.activity)) u.activity = [];
+  u.activity.unshift({ id: crypto.randomUUID(), type: "password", title: "Đổi mật khẩu", createdAt: new Date().toISOString(), ip: "", userAgent: "" });
+  u.activity = u.activity.slice(0, 100);
   saveDB(db);
   res.json({ ok: true });
+});
+
+app.get("/api/account/tickets", auth, (req, res) => {
+  const db = loadDB();
+  res.json(db.tickets.filter(t => t.userId === req.user.id).sort((a,b) => b.createdAt.localeCompare(a.createdAt)));
+});
+
+app.post("/api/account/tickets", auth, (req, res) => {
+  const subject = String(req.body.subject || "").trim().slice(0, 120);
+  const message = String(req.body.message || "").trim().slice(0, 4000);
+  if (!subject || !message) return res.status(400).json({ error: "Vui lòng nhập chủ đề và nội dung." });
+  const db = loadDB();
+  const ticket = { id: "TK-" + Date.now().toString(36).toUpperCase(), userId: req.user.id, subject, message, status: "open", createdAt: new Date().toISOString(), replies: [] };
+  db.tickets.unshift(ticket); saveDB(db); res.json(ticket);
+});
+
+app.get("/api/account/security", auth, (req, res) => {
+  const u=req.user;
+  res.json({settings:{twoFactor:!!u.twoFactor, loginNotify:u.loginNotify!==false, orderNotify:u.orderNotify!==false},sessions:[]});
+});
+
+app.put("/api/account/security", auth, (req, res) => {
+  const db=loadDB(), u=db.users.find(x=>x.id===req.user.id);
+  if(!u) return res.status(404).json({error:"Không tìm thấy tài khoản."});
+  if(req.body.twoFactor!==undefined) u.twoFactor=!!req.body.twoFactor;
+  if(req.body.loginNotify!==undefined) u.loginNotify=!!req.body.loginNotify;
+  if(req.body.orderNotify!==undefined) u.orderNotify=!!req.body.orderNotify;
+  saveDB(db); res.json({ok:true,settings:{twoFactor:!!u.twoFactor,loginNotify:u.loginNotify!==false,orderNotify:u.orderNotify!==false}});
 });
 
 app.post("/api/orders", auth, (req, res) => {
@@ -440,6 +473,7 @@ app.get("/api/admin/stats", auth, admin, (req, res) => {
 
 app.get("/api/admin/orders", auth, admin, (req, res) => res.json(loadDB().orders.sort((a, b) => b.createdAt.localeCompare(a.createdAt))));
 app.get("/api/admin/topups", auth, admin, (req, res) => res.json(loadDB().topups.sort((a, b) => b.createdAt.localeCompare(a.createdAt))));
+app.get("/api/admin/tickets", auth, admin, (req, res) => res.json(loadDB().tickets.sort((a,b) => b.createdAt.localeCompare(a.createdAt))));
 app.get("/api/admin/settings", auth, admin, (req, res) => res.json(getSettings(loadDB())));
 
 app.put("/api/admin/settings", auth, admin, (req, res) => {
