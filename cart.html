@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Giỏ hàng</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link id="favicon" rel="icon" href="data:,">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/customer-pages.css">
+</head>
+<body class="customer-page">
+  <div id="toast" class="toast"></div>
+  <header class="site-header customer-header">
+    <div class="container header-main">
+      <a href="/" class="brand">
+        <span class="brand-badge" id="brandBadge">G</span>
+        <span class="brand-copy"><strong id="shopName">Gaming Shop</strong><small id="shopTagline">Marketplace</small></span>
+      </a>
+      <div class="search-wrap"><span class="search-icon">⌕</span><input id="search" type="search" placeholder="Tìm game, sản phẩm, dịch vụ..." onkeydown="if(event.key==='Enter') window.location.href='/?q='+encodeURIComponent(this.value)"></div>
+      <div class="header-links customer-header-links">
+        <a class="ghost-btn" href="/">Trang chủ</a>
+        <a class="ghost-btn" href="/cart">Giỏ hàng <span id="cartCount" class="count-badge">0</span></a>
+        <a class="profile-btn" href="/account"><span class="avatar" id="avatarLetter">U</span><span class="profile-text"><b id="accountName">Khách</b><small id="accountBalance">Đăng nhập</small></span></a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container customer-main">
+    <section class="checkout-steps" id="checkoutSteps">
+      <div class="step active"><span>🛒</span><b>Giỏ hàng</b></div>
+      <div class="step-line"></div>
+      <div class="step"><span>▣</span><b>Xác nhận</b></div>
+      <div class="step-line"></div>
+      <div class="step"><span>✓</span><b>Hoàn tất</b></div>
+    </section>
+
+    <section class="page-titlebar">
+      <div><div class="eyebrow">CHECKOUT</div><h1>Giỏ hàng</h1><p><span id="itemSummary">0 sản phẩm</span> · Kiểm tra lựa chọn trước khi thanh toán.</p></div>
+      <a class="page-back-btn" href="/">← Tiếp tục mua sắm</a>
+    </section>
+
+    <div id="checkoutLayout" class="checkout-layout">
+      <section class="checkout-left">
+        <div class="panel-card">
+          <div class="panel-head"><div><b>Danh sách sản phẩm</b><small id="itemCountLabel">0 sản phẩm</small></div><button class="link-btn" onclick="clearCart()">Xóa tất cả</button></div>
+          <div id="cartItems" class="cart-items"></div>
+        </div>
+
+        <div class="panel-card order-info-card">
+          <div class="panel-head"><b>Thông tin Order</b></div>
+          <div class="order-info-grid" id="orderInfo"></div>
+        </div>
+
+        <div class="panel-card discount-card">
+          <button class="accordion-trigger" onclick="toggleDiscount()"><span>🏷 Mã giảm giá</span><span id="discountArrow">⌄</span></button>
+          <div id="discountBox" class="discount-box hidden"><input id="discountCode" placeholder="Nhập mã giảm giá"><button onclick="applyDiscount()">Áp dụng</button><p id="discountMsg"></p></div>
+        </div>
+      </section>
+
+      <aside class="checkout-right">
+        <div class="summary-card">
+          <div class="summary-head"><b>Tóm tắt đơn hàng</b><span id="summaryCount">0 món</span></div>
+          <div class="summary-row"><span>Tạm tính</span><strong id="subtotal">0đ</strong></div>
+          <div class="summary-row"><span>Giảm giá</span><strong id="discountValue">0đ</strong></div>
+          <div class="summary-total"><span>Tổng cộng</span><strong id="grandTotal">0đ</strong></div>
+          <div class="balance-box"><span>Số dư ví</span><b id="walletBalance">Đăng nhập để xem</b></div>
+          <button class="topup-btn" onclick="goTopup()">⊕ Nạp thêm tiền</button>
+          <button id="checkoutButton" class="checkout-btn" onclick="placeOrder()">🛒 Đặt hàng ngay</button>
+          <button class="outline-btn" onclick="refreshPage()">↻ Cập nhật giá</button>
+          <button class="danger-outline-btn" onclick="clearCart()">🗑 Xóa tất cả</button>
+        </div>
+      </aside>
+    </div>
+
+    <section id="completedPanel" class="completed-panel hidden"></section>
+  </main>
+
+  <script src="/cart.js"></script>
+</body>
+</html>

@@ -227,9 +227,14 @@ function publicUser(u) {
     id: u.id,
     email: u.email,
     name: u.name,
+    fullName: u.fullName || "",
+    phone: u.phone || "",
+    telegram: u.telegram || "",
     role: u.role,
     balance: u.balance,
-    createdAt: u.createdAt
+    discountPercent: Number(u.discountPercent || 0),
+    createdAt: u.createdAt,
+    lastLoginAt: u.lastLoginAt || null
   };
 }
 
@@ -286,16 +291,62 @@ app.post("/api/register", (req, res) => {
 
 app.post("/api/login", (req, res) => {
   const { email, password } = req.body;
-  const u = loadDB().users.find(
+  const db = loadDB();
+  const u = db.users.find(
     x => x.email.toLowerCase() === String(email || "").toLowerCase() && x.password === hashPassword(password || "")
   );
   if (!u) return res.status(401).json({ error: "Email hoặc mật khẩu không đúng." });
+  u.lastLoginAt = new Date().toISOString();
+  saveDB(db);
   res.json({ token: tokenFor(u), user: publicUser(u) });
 });
 
 app.get("/api/orders", auth, (req, res) => {
   const db = loadDB();
   res.json(db.orders.filter(o => o.userId === req.user.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+});
+
+app.get("/api/account/summary", auth, (req, res) => {
+  const db = loadDB();
+  const orders = db.orders.filter(o => o.userId === req.user.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const topups = db.topups.filter(t => t.userId === req.user.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const approvedTopup = topups.filter(t => t.status === "approved").reduce((sum, t) => sum + Number(t.amount || 0), 0);
+  const spent = orders.filter(o => o.status !== "cancelled").reduce((sum, o) => sum + Number(o.total || 0), 0);
+  const transactions = [
+    ...topups.map(t => ({ id: t.id, type: "topup", title: "Nạp tiền vào ví", amount: Number(t.amount || 0), status: t.status, createdAt: t.createdAt })),
+    ...orders.map(o => ({ id: o.id, type: "purchase", title: `Thanh toán đơn ${o.id}`, amount: -Number(o.total || 0), status: o.status, createdAt: o.createdAt }))
+  ].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  res.json({
+    user: publicUser(req.user),
+    totals: { approvedTopup, spent, orders: orders.length, transactions: transactions.length },
+    orders,
+    topups,
+    transactions
+  });
+});
+
+app.put("/api/account/profile", auth, (req, res) => {
+  const db = loadDB();
+  const u = db.users.find(x => x.id === req.user.id);
+  if (!u) return res.status(404).json({ error: "Không tìm thấy tài khoản." });
+  if (req.body.name !== undefined) u.name = String(req.body.name).trim().slice(0, 80) || u.name;
+  if (req.body.fullName !== undefined) u.fullName = String(req.body.fullName).trim().slice(0, 120);
+  if (req.body.phone !== undefined) u.phone = String(req.body.phone).trim().slice(0, 40);
+  if (req.body.telegram !== undefined) u.telegram = String(req.body.telegram).trim().slice(0, 100);
+  saveDB(db);
+  res.json(publicUser(u));
+});
+
+app.post("/api/account/password", auth, (req, res) => {
+  const currentPassword = String(req.body.currentPassword || "");
+  const newPassword = String(req.body.newPassword || "");
+  if (newPassword.length < 6) return res.status(400).json({ error: "Mật khẩu mới tối thiểu 6 ký tự." });
+  const db = loadDB();
+  const u = db.users.find(x => x.id === req.user.id);
+  if (!u || u.password !== hashPassword(currentPassword)) return res.status(400).json({ error: "Mật khẩu hiện tại không đúng." });
+  u.password = hashPassword(newPassword);
+  saveDB(db);
+  res.json({ ok: true });
 });
 
 app.post("/api/orders", auth, (req, res) => {
@@ -493,6 +544,16 @@ app.delete("/api/admin/products/:id", auth, admin, (req, res) => {
 });
 
 const INDEX_FILE = HAS_PUBLIC_APP ? path.join(PUBLIC_DIR, "index.html") : path.join(__dirname, "index.html");
+const CART_FILE = HAS_PUBLIC_APP ? path.join(PUBLIC_DIR, "cart.html") : path.join(__dirname, "cart.html");
+const ACCOUNT_FILE = HAS_PUBLIC_APP ? path.join(PUBLIC_DIR, "account.html") : path.join(__dirname, "account.html");
+app.get(["/cart", "/cart/"], (req, res) => {
+  if (fs.existsSync(CART_FILE)) return res.sendFile(CART_FILE);
+  res.status(404).send("Cart page not found.");
+});
+app.get(["/account", "/account/"], (req, res) => {
+  if (fs.existsSync(ACCOUNT_FILE)) return res.sendFile(ACCOUNT_FILE);
+  res.status(404).send("Account page not found.");
+});
 app.use((req, res) => {
   if (fs.existsSync(INDEX_FILE)) return res.sendFile(INDEX_FILE);
   res.status(500).send("Frontend files not found.");

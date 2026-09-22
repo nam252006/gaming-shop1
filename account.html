@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Tài khoản</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link id="favicon" rel="icon" href="data:,">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/customer-pages.css">
+</head>
+<body class="customer-page account-page">
+  <div id="toast" class="toast"></div>
+  <header class="site-header customer-header">
+    <div class="container header-main">
+      <a href="/" class="brand"><span class="brand-badge" id="brandBadge">G</span><span class="brand-copy"><strong id="shopName">Gaming Shop</strong><small id="shopTagline">Marketplace</small></span></a>
+      <div class="search-wrap"><span class="search-icon">⌕</span><input id="search" type="search" placeholder="Tìm game, sản phẩm, dịch vụ..." onkeydown="if(event.key==='Enter') window.location.href='/?q='+encodeURIComponent(this.value)"></div>
+      <div class="header-links customer-header-links">
+        <a class="ghost-btn" href="/">Trang chủ</a>
+        <a class="ghost-btn" href="/cart">Giỏ hàng <span id="cartCount" class="count-badge">0</span></a>
+        <a class="profile-btn" href="/account"><span class="avatar" id="avatarLetter">U</span><span class="profile-text"><b id="accountName">Khách</b><small id="accountBalance">Đăng nhập</small></span></a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container customer-main account-shell">
+    <aside class="account-sidebar">
+      <div class="account-user-card">
+        <div class="account-avatar-large" id="largeAvatar">U</div>
+        <div><strong id="sideName">Khách</strong><span id="sideBalance">0đ</span></div>
+        <span class="online-dot"></span>
+      </div>
+      <div class="side-group"><small>TÀI KHOẢN</small><button class="side-link active" data-section="profile" onclick="switchSection('profile')">👤 Thông tin cá nhân</button><button class="side-link" data-section="security" onclick="switchSection('security')">🛡 Bảo mật</button><button class="side-link" data-section="password" onclick="switchSection('password')">🔒 Đổi mật khẩu</button></div>
+      <div class="side-group"><small>GIAO DỊCH</small><button class="side-link" data-section="orders" onclick="switchSection('orders')">▤ Đơn hàng của tôi</button><button class="side-link" data-section="balance" onclick="switchSection('balance')">▣ Biến động số dư</button><button class="side-link" data-section="activity" onclick="switchSection('activity')">↻ Nhật ký hoạt động</button></div>
+      <div class="side-group"><small>TIỆN ÍCH</small><button class="side-link" data-section="favorites" onclick="switchSection('favorites')">♥ Sản phẩm yêu thích</button><button class="side-link" data-section="support" onclick="switchSection('support')">◉ Yêu cầu hỗ trợ</button><button class="side-link" data-section="referral" onclick="switchSection('referral')">⌁ Giới thiệu bạn bè</button></div>
+      <button class="logout-btn" onclick="logout()">↪ Đăng xuất</button>
+    </aside>
+
+    <section class="account-content">
+      <div id="accountLoading" class="panel-card loading-card">Đang tải thông tin tài khoản...</div>
+      <div id="accountSections" class="hidden">
+        <section class="account-section" data-section="profile">
+          <div class="account-hero-card"><div><span>Số dư hiện tại</span><strong id="heroBalance">0đ</strong><small>Ví của bạn</small></div><div class="hero-orb">₫</div></div>
+          <div class="account-stats"><div><span>▤ Tổng tiền nạp</span><strong id="totalTopup">0đ</strong></div><div><span>▣ Đã sử dụng</span><strong id="totalSpent">0đ</strong></div><div><span>% Giảm giá</span><strong id="discountPercent">0%</strong></div></div>
+          <div class="panel-card info-card"><div class="section-head-row"><b>◉ THÔNG TIN TÀI KHOẢN</b><button class="edit-btn" onclick="openProfileEditor()">✎ Chỉnh sửa</button></div><div class="info-grid" id="profileGrid"></div></div>
+        </section>
+
+        <section class="account-section hidden" data-section="security">
+          <div class="panel-card"><div class="section-title">Bảo mật tài khoản</div><div class="security-row"><div><b>Email tài khoản</b><small id="securityEmail"></small></div><span class="verified-badge">✓ Đã xác thực</span></div><div class="security-row"><div><b>Phiên đăng nhập</b><small>Token 7 ngày · Thiết bị hiện tại được ghi nhận tại phiên đăng nhập.</small></div><span class="status-badge green">Đang hoạt động</span></div><div class="security-row"><div><b>Đổi mật khẩu</b><small>Nên thay mật khẩu định kỳ nếu dùng tài khoản trên nhiều thiết bị.</small></div><button class="edit-btn" onclick="switchSection('password')">Đổi ngay</button></div></div>
+        </section>
+
+        <section class="account-section hidden" data-section="password">
+          <div class="panel-card narrow-card"><div class="section-title">Đổi mật khẩu</div><form class="account-form" onsubmit="changePassword(event)"><label>Mật khẩu hiện tại<input name="currentPassword" type="password" required></label><label>Mật khẩu mới<input name="newPassword" type="password" minlength="6" required></label><label>Nhập lại mật khẩu mới<input name="confirmPassword" type="password" minlength="6" required></label><button class="primary-wide">Cập nhật mật khẩu</button></form></div>
+        </section>
+
+        <section class="account-section hidden" data-section="orders">
+          <div class="panel-card"><div class="section-title">Đơn hàng của tôi <span id="orderCountBadge" class="soft-count">0</span></div><div id="ordersList" class="orders-list"></div></div>
+        </section>
+
+        <section class="account-section hidden" data-section="balance">
+          <div class="panel-card"><div class="section-title">Biến động số dư</div><div id="balanceList" class="transaction-list"></div></div>
+        </section>
+
+        <section class="account-section hidden" data-section="activity">
+          <div class="panel-card"><div class="section-title">Nhật ký hoạt động</div><div id="activityList" class="transaction-list"></div></div>
+        </section>
+
+        <section class="account-section hidden" data-section="favorites">
+          <div class="panel-card empty-account"><div class="empty-icon">♥</div><h3>Chưa có sản phẩm yêu thích</h3><p>Các sản phẩm bạn đánh dấu yêu thích sẽ xuất hiện tại đây.</p><a href="/" class="primary-wide link-wide">Khám phá sản phẩm</a></div>
+        </section>
+        <section class="account-section hidden" data-section="support">
+          <div class="panel-card empty-account"><div class="empty-icon">◉</div><h3>Hỗ trợ khách hàng</h3><p id="supportCopy">Bạn có thể cập nhật Discord, Facebook hoặc Telegram trong phần thông tin shop.</p><div class="support-links" id="supportLinks"></div></div>
+        </section>
+        <section class="account-section hidden" data-section="referral">
+          <div class="panel-card empty-account"><div class="empty-icon">⌁</div><h3>Giới thiệu bạn bè</h3><p>Hệ thống giới thiệu có thể mở rộng thêm khi bạn muốn bật chương trình affiliate/referral.</p><div class="ref-code"><span>Mã giới thiệu</span><b id="refCode">---</b></div></div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <div id="modal" class="customer-modal hidden"><div class="customer-modal-backdrop" onclick="closeModal()"></div><section class="customer-modal-card" id="modalCard"></section></div>
+  <script src="/account.js"></script>
+</body>
+</html>
