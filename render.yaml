@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: gaming-shop
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: SHOP_NAME
+        value: Gaming Shop
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true

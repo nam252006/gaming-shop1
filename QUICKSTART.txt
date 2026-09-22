@@ -1,0 +1,19 @@
+1. Mở CMD trong thư mục gaming-shop
+2. npm install (chỉ cần chạy lần đầu)
+3. npm start
+4. Mở http://localhost:3000
+
+Admin mặc định:
+Email: admin@example.com
+Password: change-this-password
+
+Bạn có thể:
+- Admin > Sản phẩm > thêm/sửa sản phẩm và chọn ảnh PNG/JPG/WebP/GIF (tối đa 4MB/ảnh).
+- Admin > Giao diện shop > đổi tên shop, logo, favicon, hero/banner, màu sắc, danh mục, thông tin liên hệ, Discord/Facebook/Telegram.
+- Các tùy chỉnh được lưu trong data.json.
+
+Deploy Render:
+- Build Command: npm install
+- Start Command: npm start
+- Repository root nên chứa package.json, server.js và public/index.html.
+- Server có fallback nếu bạn lỡ upload index.html/app.js/styles.css ở repo root.
