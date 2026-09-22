@@ -49,12 +49,18 @@ const HAS_PUBLIC_APP = fs.existsSync(path.join(PUBLIC_DIR, "index.html"));
 if (HAS_PUBLIC_APP) {
   app.use(express.static(PUBLIC_DIR));
 } else {
+  // The current GitHub repo keeps frontend files at the repository root.
+  // Serve only the browser assets explicitly (never expose server.js/data.json).
   const rootFile = (name) => (req, res) => res.sendFile(path.join(__dirname, name));
-  app.get("/styles.css", rootFile("styles.css"));
-  app.get("/app.js", rootFile("app.js"));
+  const rootAssets = [
+    "styles.css", "customer-pages.css", "app.js",
+    "cart.js", "account.js",
+    "admin.css", "admin.js"
+  ];
+  for (const asset of rootAssets) {
+    app.get("/" + asset, rootFile(asset));
+  }
   app.get("/index.html", rootFile("index.html"));
-  app.get("/admin.css", rootFile("admin.css"));
-  app.get("/admin.js", rootFile("admin.js"));
   app.get("/admin.html", rootFile("admin.html"));
 }
 
