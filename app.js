@@ -56,8 +56,16 @@ function applyHomeLayout(){
   const order=Array.isArray(settings.homeOrder)?settings.homeOrder:["hero","bestsellers","products","recent","trust"];const main=$("#homeMain");if(main)for(const key of order)if(nodes[key])main.appendChild(nodes[key]);
 }
 function renderCategories(){
-  const cats=(settings.categories||[]).filter(Boolean);const nav=$("#categoryNav");if(nav)nav.innerHTML=[`<button class="nav-link ${currentCat==="all"?"active":""}" onclick="filterCategory('all')">Tất cả</button>`,...cats.map(c=>`<button class="nav-link ${currentCat===c?"active":""}" onclick="filterCategory(${JSON.stringify(c)})">${esc(c)}</button>`)].join("");
-  const feature=$("#featureList");if(feature){const featured=cats.slice(0,3);feature.innerHTML=(featured.length?featured:["Sản phẩm"]).map((c,i)=>`<button onclick="filterCategory(${JSON.stringify(c)})"><span class="feature-icon">${esc(String(c).slice(0,1).toUpperCase())}</span><span><b>${esc(c)}</b><small>${i===0?"Gọn, dễ chọn":i===1?"PC & Mobile":"Theo yêu cầu"}</small></span><i>→</i></button>`).join("")}
+  const cats = (settings.categories || []).filter(Boolean);
+  const nav = $("#categoryNav");
+  if (nav) {
+    nav.innerHTML = [`<button type="button" class="nav-link ${currentCat === "all" ? "active" : ""}" data-category="all">Tất cả</button>`, ...cats.map(c => `<button type="button" class="nav-link ${currentCat === c ? "active" : ""}" data-category="${esc(String(c))}">${esc(c)}</button>`)].join("");
+  }
+  const feature = $("#featureList");
+  if (feature) {
+    const featured = cats.slice(0,3);
+    feature.innerHTML = (featured.length ? featured : ["Sản phẩm"]).map((c,i) => `<button type="button" data-category="${esc(String(c))}"><span class="feature-icon">${esc(String(c).slice(0,1).toUpperCase())}</span><span><b>${esc(c)}</b><small>${i===0?"Gọn, dễ chọn":i===1?"PC & Mobile":"Theo yêu cầu"}</small></span><i>→</i></button>`).join("");
+  }
 }
 function updateAccount(){
   if(currentUser){$("#accountName").textContent=currentUser.name;$("#accountBalance").textContent=money(currentUser.balance);$("#avatarLetter").textContent=(currentUser.name||"U").slice(0,1).toUpperCase();if($("#adminPanelBtn"))$("#adminPanelBtn").classList.toggle("hidden",currentUser.role!=="admin")}
@@ -122,13 +130,19 @@ function closeModal(){$("#modal").classList.add("hidden");$("#modal").setAttribu
 function clearFilters(){currentCat="all";renderCategories();$("#search").value="";$("#sortSelect").value="default";applyHomeLayout();renderProducts()}
 function clearSearch(){$("#search").value="";renderProducts()}
 function filterCategory(cat){
-  currentCat=cat;
+  currentCat = String(cat || "all");
+  if (currentCat === "all") currentCat = "all";
   renderCategories();
-  if($("#sortSelect"))$("#sortSelect").value="default";
+  if ($("#sortSelect")) $("#sortSelect").value = "default";
   applyHomeLayout();
   renderProducts();
-  // Chờ layout ẩn/hiện section hoàn tất rồi mới cuộn để trình duyệt tính đúng vị trí.
-  requestAnimationFrame(()=>setTimeout(scrollToProducts,40));
+
+  // Đưa người dùng tới đúng khu vực danh sách sản phẩm sau khi DOM đã cập nhật.
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      scrollToProducts();
+    }, 60);
+  });
 }
 function scrollToProducts(){
   const target=$("#products");
@@ -143,5 +157,14 @@ function renderFloatingSocials(){
   const el=$("#floatingSocials");if(!el)return;const list=[{type:settings.floatingSocial1Type,label:settings.floatingSocial1Label,url:settings.floatingSocial1Url},{type:settings.floatingSocial2Type,label:settings.floatingSocial2Label,url:settings.floatingSocial2Url}].filter(x=>x.url);
   el.innerHTML=list.map(x=>`<a class="social-float ${esc(x.type||"")}" href="${esc(safeHref(x.url))}" target="_blank" rel="noopener" title="${esc(x.label||x.type)}"><span>${socialIcon(x.type)}</span><b>${esc(x.label||x.type||"Liên hệ")}</b></a>`).join("");el.classList.toggle("hidden",list.length===0)
 }
+// Dùng event delegation để category luôn bấm được, kể cả khi danh mục được render lại.
+document.addEventListener("click", (event) => {
+  const el = event.target.closest("[data-category]");
+  if (!el) return;
+  event.preventDefault();
+  event.stopPropagation();
+  filterCategory(el.dataset.category || "all");
+});
+
 $("#search")?.addEventListener("input",renderProducts);
 boot();
