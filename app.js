@@ -71,12 +71,19 @@ function renderCategories(){
 
 function updateAccount(){if(currentUser){$("#accountName").textContent=currentUser.name;$("#accountBalance").textContent=money(currentUser.balance);$("#avatarLetter").textContent=(currentUser.name||"U").slice(0,1).toUpperCase()}else{$("#accountName").textContent="Khách";$("#accountBalance").textContent="Đăng nhập";$("#avatarLetter").textContent="U"}}
 function updateCartCount(){$("#cartCount").textContent=cart.reduce((s,i)=>s+i.qty,0)}
+function getVariants(p){
+  if(Array.isArray(p.variants) && p.variants.length) return p.variants;
+  return [{id:"default",name:p.name,price:Number(p.price)||0,oldPrice:Number(p.oldPrice)||0,delivery:p.delivery||"Giao ngay",badge:p.badge||"",image:p.image||"",stock:null,sold:p.sold||0}];
+}
+function getDefaultVariant(p){return getVariants(p)[0]||null}
+function variantById(p,variantId){const vs=getVariants(p);return vs.find(v=>String(v.id)===String(variantId))||vs[0]||null}
+function displayPrice(p){const vs=getVariants(p);return Math.min(...vs.map(v=>Number(v.price)||0));}
 function productImage(p,cls="thumb"){
   return p.image?`<div class="${cls}"><img src="${p.image}" alt="${esc(p.name)}" loading="lazy">${p.badge?`<span class="badge">${esc(p.badge)}</span>`:""}</div>`:`<div class="${cls}"><div class="thumb-placeholder">Chưa có ảnh</div>${p.badge?`<span class="badge">${esc(p.badge)}</span>`:""}</div>`
 }
 function renderProducts(){
   const q=($( "#search")?.value||"").trim().toLowerCase();
-  let list=products.filter(p=>(currentCat==="all"||p.category===currentCat)&&(!q||`${p.name} ${p.category} ${p.description}`.toLowerCase().includes(q)));
+  let list=products.filter(p=>(currentCat==="all"||p.category===currentCat)&&(!q||`${p.name} ${p.category} ${p.description} ${(p.variants||[]).map(v=>v.name).join(" ")}`.toLowerCase().includes(q)));
   const sort=$("#sortSelect")?.value||"default";
   if(sort==="price-asc")list.sort((a,b)=>a.price-b.price);
   if(sort==="price-desc")list.sort((a,b)=>b.price-a.price);
@@ -86,24 +93,38 @@ function renderProducts(){
   $("#searchClear").classList.toggle("hidden",!$("#search").value);
 }
 function card(p){
-  return `<article class="card">${productImage(p,"thumb")}<div class="card-body"><div class="card-category">${esc(p.category)}</div><h3>${esc(p.name)}</h3><div class="price-row"><span class="price">${money(p.price)}</span>${p.oldPrice?`<span class="old">${money(p.oldPrice)}</span>`:""}</div><div class="card-meta"><span>Đã bán ${fmt(p.sold)}</span><span class="delivery">${esc(p.delivery||"Giao ngay")}</span></div><div class="card-footer"><button class="card-buy" onclick="openProduct(${p.id})">Xem chi tiết</button><button class="card-cart" title="Thêm vào giỏ" onclick="event.stopPropagation();addCart(${p.id})">＋</button></div></div></article>`
+  return `<article class="card">${productImage(p,"thumb")}<div class="card-body"><div class="card-category">${esc(p.category)}</div><h3>${esc(p.name)}</h3><div class="price-row"><span class="price">${getVariants(p).length>1?`Từ ${money(displayPrice(p))}`:money(getDefaultVariant(p)?.price||p.price)}</span>${(getVariants(p).length===1?(getDefaultVariant(p)?.oldPrice||p.oldPrice):0)?`<span class="old">${money(getDefaultVariant(p)?.oldPrice||p.oldPrice)}</span>`:""}</div><div class="card-meta"><span>Đã bán ${fmt(p.sold)}</span><span class="delivery">${esc(p.delivery||"Giao ngay")}</span></div><div class="card-footer"><button class="card-buy" onclick="openProduct(${p.id})">Xem chi tiết</button><button class="card-cart" title="Thêm vào giỏ" onclick="event.stopPropagation();addCart(${p.id})">＋</button></div></div></article>`
 }
+let detailState={productId:null,variantId:null,qty:1};
 function openProduct(id){
   const p=products.find(x=>x.id===id);if(!p)return;
+  const variants=getVariants(p);
+  const first=variants[0];
+  detailState={productId:p.id,variantId:first.id,qty:1};
   const image=p.image?`<img src="${p.image}" alt="${esc(p.name)}">`:`<div class="thumb-placeholder">Chưa có ảnh sản phẩm</div>`;
-  openModal(`<div class="modal-head"><div><span class="pill">${esc(p.category)}</span><h2 style="margin-top:8px">${esc(p.name)}</h2></div><button class="close-btn" onclick="closeModal()">×</button></div><div class="detail-grid"><div class="detail-image">${image}</div><div class="detail-copy"><p>${esc(p.description||"Sản phẩm đang được cập nhật thông tin.")}</p><div class="detail-price">${money(p.price)}</div><p><b>Giao hàng:</b> ${esc(p.delivery||"Giao ngay")}</p><p><b>Đã bán:</b> ${fmt(p.sold)}</p><div class="row"><button class="action-btn primary" onclick="addCart(${p.id});closeModal()">Thêm vào giỏ</button><button class="action-btn secondary" onclick="buyNow(${p.id})">Mua ngay</button></div></div></div>`)
+  const variantRows=variants.map((v,i)=>`<button type="button" class="variant-row ${i===0?"selected":""}" data-variant-id="${esc(v.id)}" onclick="selectProductVariant('${esc(String(v.id))}')"><span class="variant-radio"></span><span class="variant-thumb">${v.image?`<img src="${v.image}" alt="">`:`<span>IMG</span>`}</span><span class="variant-info"><b>${esc(v.name)}</b><small>↗ ${esc(v.delivery||"Giao ngay")}</small></span><span class="variant-price"><b>${money(v.price)}</b>${v.oldPrice?`<del>${money(v.oldPrice)}</del>`:""}</span></button>`).join("");
+  openModal(`<div class="modal-head"><div><span class="pill">${esc(p.category)}</span><h2 style="margin-top:8px">${esc(p.name)}</h2></div><button class="close-btn" onclick="closeModal()">×</button></div><div class="detail-grid"><div class="detail-image">${image}</div><div class="detail-copy"><p>${esc(p.description||"Sản phẩm đang được cập nhật thông tin.")}</p><div id="detailSelectedPrice" class="detail-price">${money(first.price)}</div><p><b>Đã bán:</b> ${fmt(p.sold)}</p><div class="detail-qty"><span>Số lượng</span><div><button type="button" class="qty-btn" onclick="changeDetailQty(-1)">−</button><b id="detailQty">1</b><button type="button" class="qty-btn" onclick="changeDetailQty(1)">＋</button></div></div><div class="row"><button class="action-btn primary" onclick="addSelectedToCart()">Thêm vào giỏ</button><button class="action-btn secondary" onclick="buySelectedNow()">Mua ngay</button></div></div></div>${variants.length>0?`<section class="variant-picker"><div class="variant-picker-head"><h3>Chọn gói / thời hạn</h3><span>${variants.length} lựa chọn</span></div><div class="variant-list">${variantRows}</div></section>`:""}<section class="product-description"><h3>Thông tin sản phẩm</h3><p>${esc(p.description||"Đang cập nhật...")}</p></section>`);
 }
-function addCart(id){const x=cart.find(i=>i.id===id);x?x.qty++:cart.push({id,qty:1});saveCart();updateCartCount();toast("Đã thêm vào giỏ hàng")}
-function removeCart(id){cart=cart.filter(i=>i.id!==id);saveCart();openCart()}
-function changeQty(id,delta){const x=cart.find(i=>i.id===id);if(!x)return;x.qty+=delta;if(x.qty<=0)cart=cart.filter(i=>i.id!==id);saveCart();updateCartCount();openCart()}
-function buyNow(id){addCart(id);closeModal();openCart()}
+function selectProductVariant(variantId){
+  const p=products.find(x=>x.id===detailState.productId);if(!p)return;const v=variantById(p,variantId);if(!v)return;
+  detailState.variantId=v.id;
+  document.querySelectorAll(".variant-row").forEach(el=>el.classList.toggle("selected",String(el.dataset.variantId)===String(v.id)));
+  const price=$("#detailSelectedPrice");if(price)price.textContent=money(v.price);
+}
+function changeDetailQty(delta){detailState.qty=Math.max(1,Math.min(99,detailState.qty+delta));const el=$("#detailQty");if(el)el.textContent=detailState.qty}
+function addSelectedToCart(){const p=products.find(x=>x.id===detailState.productId);if(!p)return;addCart(p.id,detailState.variantId,detailState.qty);closeModal()}
+function buySelectedNow(){const p=products.find(x=>x.id===detailState.productId);if(!p)return;addCart(p.id,detailState.variantId,detailState.qty);closeModal();openCart()}
+function addCart(id,variantId=null,qty=1){const p=products.find(x=>x.id===id);if(!p)return;const v=variantById(p,variantId);if(!v)return;const key=String(v.id);const x=cart.find(i=>i.id===id&&String(i.variantId||"default")===key);x?x.qty=Math.min(99,x.qty+qty):cart.push({id,variantId:key,qty});saveCart();updateCartCount();toast("Đã thêm vào giỏ hàng")}
+function removeCart(id,variantId="default"){cart=cart.filter(i=>!(i.id===id&&String(i.variantId||"default")===String(variantId)));saveCart();openCart()}
+function changeQty(id,variantId,delta){const x=cart.find(i=>i.id===id&&String(i.variantId||"default")===String(variantId));if(!x)return;x.qty+=delta;if(x.qty<=0)cart=cart.filter(i=>i!==x);saveCart();updateCartCount();openCart()}
+function buyNow(id,variantId=null){addCart(id,variantId,1);openCart()}
 function saveCart(){localStorage.setItem("gaming_cart",JSON.stringify(cart))}
 function openCart(){
-  const rows=cart.map(i=>{const p=products.find(x=>x.id===i.id);if(!p)return"";return `<div class="cart-row"><div class="cart-row-info"><b>${esc(p.name)}</b><small>${money(p.price)} / món</small></div><div class="cart-qty"><button class="qty-btn" onclick="changeQty(${p.id},-1)">−</button><span>${i.qty}</span><button class="qty-btn" onclick="changeQty(${p.id},1)">＋</button><button class="qty-btn" onclick="removeCart(${p.id})">×</button></div></div>`}).join("");
-  const total=cart.reduce((s,i)=>{const p=products.find(x=>x.id===i.id);return s+(p?p.price*i.qty:0)},0);
+  const rows=cart.map(i=>{const p=products.find(x=>x.id===i.id);if(!p)return"";const v=variantById(p,i.variantId);if(!v)return"";return `<div class="cart-row"><div class="cart-row-info"><b>${esc(p.name)}</b><small>${esc(v.name)} · ${money(v.price)} / món</small></div><div class="cart-qty"><button class="qty-btn" onclick="changeQty(${p.id},'${esc(String(v.id))}',-1)">−</button><span>${i.qty}</span><button class="qty-btn" onclick="changeQty(${p.id},'${esc(String(v.id))}',1)">＋</button><button class="qty-btn" onclick="removeCart(${p.id},'${esc(String(v.id))}')">×</button></div></div>`}).join("");
+  const total=cart.reduce((s,i)=>{const p=products.find(x=>x.id===i.id);const v=p?variantById(p,i.variantId):null;return s+(v?v.price*i.qty:0)},0);
   openModal(`<div class="modal-head"><h2>Giỏ hàng</h2><button class="close-btn" onclick="closeModal()">×</button></div>${rows||"<p class='muted-note'>Giỏ hàng đang trống.</p>"}<div class="checkout-bar"><div class="checkout-total"><small>TỔNG CỘNG</small><strong>${money(total)}</strong></div><button class="action-btn primary" ${!cart.length?"disabled":""} onclick="checkout()">Thanh toán</button></div>`)
 }
-async function checkout(){if(!currentUser){closeModal();openAuth("login");return}if(!cart.length)return;try{const d=await api("/api/orders",{method:"POST",body:JSON.stringify({items:cart})});currentUser=d.user;cart=[];saveCart();updateAccount();updateCartCount();closeModal();toast("Đặt hàng thành công: "+d.order.id)}catch(e){toast(e.message)}}
+async function checkout(){if(!currentUser){closeModal();openAuth("login");return}if(!cart.length)return;try{const d=await api("/api/orders",{method:"POST",body:JSON.stringify({items:cart.map(i=>({id:i.id,variantId:i.variantId,qty:i.qty}))})});currentUser=d.user;cart=[];saveCart();updateAccount();updateCartCount();closeModal();toast("Đặt hàng thành công: "+d.order.id)}catch(e){toast(e.message)}}
 function openAuth(mode="login"){openModal(`<div class="modal-head"><h2>${mode==="login"?"Đăng nhập":"Tạo tài khoản"}</h2><button class="close-btn" onclick="closeModal()">×</button></div><form class="form" onsubmit="authSubmit(event,'${mode}')">${mode==="register"?`<input name="name" placeholder="Tên hiển thị" required>`:""}<input name="email" type="email" placeholder="Email" required><input name="password" type="password" placeholder="Mật khẩu" required minlength="6"><button class="action-btn primary">${mode==="login"?"Đăng nhập":"Đăng ký"}</button></form><button class="action-btn secondary" style="margin-top:10px" onclick="openAuth('${mode==="login"?"register":"login"}')">${mode==="login"?"Chưa có tài khoản? Đăng ký":"Đã có tài khoản? Đăng nhập"}</button>`)}
 async function authSubmit(e,mode){e.preventDefault();const f=new FormData(e.target);try{const d=await api("/api/"+mode,{method:"POST",body:JSON.stringify(Object.fromEntries(f))});token=d.token;localStorage.setItem("gaming_token",token);currentUser=d.user;updateAccount();closeModal();toast("Xin chào "+currentUser.name)}catch(err){toast(err.message)}}
 function showAccount(){

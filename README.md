@@ -1,18 +1,36 @@
-# Gaming Shop — Shop + Separate Admin Panel
+# Gaming Shop — Product Variants Edition
 
-Routes:
-- `/` — customer shop
-- `/admin` — separate Admin Panel
+Bản này mở rộng shop để mỗi sản phẩm có thể có nhiều **dòng / gói / thời hạn**.
 
-This package is arranged for a GitHub repository where all frontend files are at the repository root. The server also supports a `public/` folder if present.
+Ví dụ:
+- Delta Android Key 1 Tháng — 149.000đ
+- Delta iOS Key 1 Tháng — 149.000đ
+- Delta Key 3 Tháng — 299.000đ
+- Delta Key 1 Năm — 799.000đ
 
-## Render
-Build Command: `npm install`
-Start Command: `npm start`
-Root Directory: leave blank when this folder is the repo root.
+## Cách quản lý
 
-## Default admin
-Email: `admin@example.com`
-Password: `change-this-password`
+Vào `/admin` → `Sản phẩm` → `Sửa` hoặc `Thêm sản phẩm`.
 
-For production, set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in Render Environment Variables.
+Trong phần **Các dòng / gói sản phẩm**, bạn có thể thêm bao nhiêu dòng cần thiết. Mỗi dòng có:
+- Tên dòng / gói
+- Giá
+- Giá cũ
+- Giao hàng
+- Badge
+- Tồn kho (để trống = không giới hạn)
+- Ảnh riêng cho dòng đó
+
+Khách hàng sẽ thấy các dòng dưới dạng lựa chọn radio trên trang chi tiết sản phẩm. Khi thêm vào giỏ, hệ thống lưu cả `productId` và `variantId`, nên các gói khác nhau có thể có giá và tồn kho khác nhau.
+
+## Deploy
+
+Repository root giữ nguyên cấu trúc phẳng như bản trước:
+
+`package.json`, `server.js`, `index.html`, `app.js`, `styles.css`, `admin.html`, `admin.js`, `admin.css`, `data.json`.
+
+Render:
+- Root Directory: để trống
+- Build Command: `npm install`
+- Start Command: `npm start`
+

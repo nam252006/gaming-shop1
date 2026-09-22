@@ -58,18 +58,69 @@ function topupLine(t){return `<div class="mini-line"><div><b>${esc(t.id)}</b><sm
 
 async function loadProducts(){products=await api("/api/products");return products}
 async function renderProductsPage(){await loadProducts();$("#content").innerHTML=`<div class="page-toolbar"><div><div class="muted">Quản lý ảnh, giá, danh mục, badge và mô tả từng sản phẩm.</div></div><div class="row-actions"><div class="search"><input id="productSearch" placeholder="Tìm sản phẩm..." oninput="filterProductRows()"></div><button class="btn primary" onclick="productForm()">＋ Thêm sản phẩm</button></div></div><div id="productList" class="product-list">${products.map(productRow).join("")||`<div class="panel empty">Chưa có sản phẩm.</div>`}</div>`}
-function productRow(p){return `<div class="product-row" data-search="${esc((p.name+" "+p.category).toLowerCase())}"><div class="product-main"><div class="thumb">${p.image?`<img src="${p.image}" alt="">`:`NO IMG`}</div><div><b>${esc(p.name)}</b><small>${esc(p.category)} · ${money(p.price)}${p.oldPrice?` · Giá cũ ${money(p.oldPrice)}`:""}</small><small>${esc(p.delivery||"Giao ngay")}${p.badge?` · ${esc(p.badge)}`:""}</small></div></div><div class="row-actions"><button class="btn small" onclick="productForm(${p.id})">Sửa</button><button class="btn small danger" onclick="deleteProduct(${p.id})">Xóa</button></div></div>`}
-function filterProductRows(){const q=$("#productSearch").value.toLowerCase();document.querySelectorAll("#productList .product-row").forEach(x=>x.style.display=x.dataset.search.includes(q)?"":"none")}
-function productForm(id=null){
-  const p=id?products.find(x=>x.id===id):null; if(id&&!p)return;
-  $("#content").innerHTML=`<div class="page-toolbar"><div><div class="muted">${p?"Chỉnh sửa sản phẩm":"Tạo sản phẩm mới"}</div></div><button class="btn" onclick="renderProductsPage()">← Quay lại</button></div>
-  <form id="productForm" class="form-grid"><section class="design-card"><h3>Thông tin sản phẩm</h3><div class="field"><label>Tên sản phẩm<input name="name" value="${esc(p?.name||"")}" required></label></div><div class="field-grid"><div class="field"><label>Danh mục<input name="category" list="cats" value="${esc(p?.category||"")}" required></label></div><div class="field"><label>Badge<input name="badge" placeholder="HOT / NEW / SALE" value="${esc(p?.badge||"")}"></label></div></div><datalist id="cats">${(settings.categories||[]).map(c=>`<option value="${esc(c)}">`).join("")}</datalist><div class="field-grid"><div class="field"><label>Giá<input name="price" type="number" min="1" value="${p?.price||""}" required></label></div><div class="field"><label>Giá cũ<input name="oldPrice" type="number" min="0" value="${p?.oldPrice||0}"></label></div></div><div class="field"><label>Giao hàng<input name="delivery" value="${esc(p?.delivery||"Giao ngay")}"></label></div><div class="field"><label>Mô tả<textarea name="description">${esc(p?.description||"")}</textarea></label></div><div class="form-actions" style="margin-top:16px"><span class="muted">${p?`ID ${p.id}`:"Sản phẩm mới"}</span><button class="btn primary">${p?"Lưu thay đổi":"Tạo sản phẩm"}</button></div></section>
-  <section class="design-card"><h3>Ảnh sản phẩm</h3><p class="muted">PNG/JPG/WebP/GIF, tối đa 4MB.</p><div class="upload"><input id="productImageFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif"><div id="productPreview" class="preview">${p?.image?`<img src="${p.image}" alt="preview">`:`Chưa chọn ảnh`}</div></div></section></form>`;
-  const input=$("#productImageFile"), preview=$("#productPreview"); input.onchange=async()=>{try{const d=await fileToData(input.files?.[0]);if(d){preview.dataset.image=d;preview.innerHTML=`<img src="${d}" alt="preview">`}}catch(e){toast(e.message);input.value=""}};
-  $("#productForm").onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target);const image=preview.dataset.image!==undefined?preview.dataset.image:(p?.image||"");const body={name:f.get("name"),category:f.get("category"),price:Number(f.get("price")),oldPrice:Number(f.get("oldPrice"))||0,badge:f.get("badge"),delivery:f.get("delivery"),description:f.get("description"),image};try{if(id)await api(`/api/admin/products/${id}`,{method:"PUT",body:JSON.stringify(body)});else await api("/api/admin/products",{method:"POST",body:JSON.stringify(body)});toast(p?"Đã cập nhật sản phẩm":"Đã tạo sản phẩm");go("products")}catch(err){toast(err.message)}};
+function productRow(p){
+  const variants=Array.isArray(p.variants)&&p.variants.length?p.variants:[];
+  const variantText=variants.length?`${variants.length} gói / dòng`:"1 gói mặc định";
+  return `<div class="product-row" data-search="${esc((p.name+" "+p.category+" "+variants.map(v=>v.name).join(" ")).toLowerCase())}"><div class="product-main"><div class="thumb">${p.image?`<img src="${p.image}" alt="">`:`NO IMG`}</div><div><b>${esc(p.name)}</b><small>${esc(p.category)} · ${money(p.price)}${p.oldPrice?` · Giá cũ ${money(p.oldPrice)}`:""}</small><small>${variantText}${p.delivery?` · ${esc(p.delivery)}`:""}${p.badge?` · ${esc(p.badge)}`:""}</small></div></div><div class="row-actions"><button class="btn small" onclick="productForm(${p.id})">Sửa</button><button class="btn small danger" onclick="deleteProduct(${p.id})">Xóa</button></div></div>`
 }
-async function deleteProduct(id){if(!confirm("Xóa sản phẩm này?"))return;try{await api(`/api/admin/products/${id}`,{method:"DELETE"});toast("Đã xóa sản phẩm");go("products")}catch(e){toast(e.message)}}
-
+function filterProductRows(){const q=$("#productSearch").value.toLowerCase();document.querySelectorAll("#productList .product-row").forEach(x=>x.style.display=x.dataset.search.includes(q)?"":"none")}
+function variantTemplate(v={}, idx=0){
+  const safeId=esc(String(v.id||(`new-${Date.now()}-${idx}`)));
+  return `<div class="variant-editor" data-variant-id="${safeId}">
+    <div class="variant-editor-head"><div><b>Dòng ${idx+1}</b><span class="variant-id">${v.id?esc(v.id):"Mới"}</span></div><button type="button" class="btn small danger" onclick="removeVariantRow(this)">Xóa dòng</button></div>
+    <div class="field-grid">
+      <div class="field"><label>Tên dòng / gói<input class="variant-name" value="${esc(v.name||"")}" placeholder="Key 1 Tháng" required></label></div>
+      <div class="field"><label>Giá<input class="variant-price" type="number" min="1" value="${Number(v.price)||0}" required></label></div>
+    </div>
+    <div class="field-grid">
+      <div class="field"><label>Giá cũ<input class="variant-old-price" type="number" min="0" value="${Number(v.oldPrice)||0}"></label></div>
+      <div class="field"><label>Giao hàng<input class="variant-delivery" value="${esc(v.delivery||"Giao ngay")}" placeholder="Giao ngay"></label></div>
+    </div>
+    <div class="field-grid">
+      <div class="field"><label>Badge<input class="variant-badge" value="${esc(v.badge||"")}" placeholder="HOT / NEW / SALE"></label></div>
+      <div class="field"><label>Tồn kho <small class="helper-inline">để trống = không giới hạn</small><input class="variant-stock" type="number" min="0" value="${v.stock===null||v.stock===undefined?"":Number(v.stock)}" placeholder="Không giới hạn"></label></div>
+    </div>
+    <div class="variant-image-area"><div><label class="field-label">Ảnh riêng cho dòng này <small>(tùy chọn)</small></label><input class="variant-image-file" type="file" accept="image/png,image/jpeg,image/webp,image/gif"></div><div class="variant-preview" data-image="${esc(v.image||"")}">${v.image?`<img src="${v.image}" alt="">`:`Chưa có ảnh riêng`}</div></div>
+  </div>`
+}
+function bindVariantImageInputs(){
+  document.querySelectorAll(".variant-image-file").forEach(input=>{input.onchange=async()=>{try{const d=await fileToData(input.files?.[0]);if(d){const preview=input.closest(".variant-editor").querySelector(".variant-preview");preview.dataset.image=d;preview.innerHTML=`<img src="${d}" alt="">`}}catch(e){toast(e.message);input.value=""}}});
+}
+function addVariantRow(){
+  const wrap=$("#variantBuilder");if(!wrap)return;
+  const idx=wrap.querySelectorAll(".variant-editor").length;
+  wrap.insertAdjacentHTML("beforeend",variantTemplate({id:"",name:"",price:0,oldPrice:0,delivery:"Giao ngay",badge:"",stock:null,image:""},idx));
+  refreshVariantNumbers();bindVariantImageInputs();
+  const last=wrap.lastElementChild;last?.scrollIntoView({behavior:"smooth",block:"center"});
+}
+function removeVariantRow(btn){
+  const rows=document.querySelectorAll("#variantBuilder .variant-editor");
+  if(rows.length<=1){toast("Sản phẩm phải có ít nhất 1 dòng / gói");return;}
+  btn.closest(".variant-editor").remove();refreshVariantNumbers();
+}
+function refreshVariantNumbers(){document.querySelectorAll("#variantBuilder .variant-editor").forEach((el,i)=>{const b=el.querySelector(".variant-editor-head b");if(b)b.textContent=`Dòng ${i+1}`})}
+function collectVariants(){
+  return [...document.querySelectorAll("#variantBuilder .variant-editor")].map((row,i)=>({
+    id:row.dataset.variantId && !row.dataset.variantId.startsWith("new-") ? row.dataset.variantId : undefined,
+    name:row.querySelector(".variant-name")?.value.trim()||`Gói ${i+1}`,
+    price:Number(row.querySelector(".variant-price")?.value)||0,
+    oldPrice:Number(row.querySelector(".variant-old-price")?.value)||0,
+    delivery:row.querySelector(".variant-delivery")?.value.trim()||"Giao ngay",
+    badge:row.querySelector(".variant-badge")?.value.trim()||"",
+    stock:row.querySelector(".variant-stock")?.value===""?null:Number(row.querySelector(".variant-stock")?.value),
+    image:row.querySelector(".variant-preview")?.dataset.image||""
+  })).filter(v=>v.name&&v.price>0)
+}
+function productForm(id=null){
+  const p=id?products.find(x=>x.id===id):null;if(id&&!p)return;
+  const variants=(Array.isArray(p?.variants)&&p.variants.length?p.variants:[{id:"",name:p?.name||"",price:Number(p?.price)||0,oldPrice:Number(p?.oldPrice)||0,delivery:p?.delivery||"Giao ngay",badge:p?.badge||"",stock:null,image:p?.image||""}]);
+  const variantHtml=variants.map(variantTemplate).join("");
+  $("#content").innerHTML=`<div class="page-toolbar"><div><div class="muted">${p?"Chỉnh sửa sản phẩm":"Tạo sản phẩm mới"}</div></div><button class="btn" onclick="renderProductsPage()">← Quay lại</button></div>
+  <form id="productForm" class="form-grid"><section class="design-card"><h3>Thông tin sản phẩm</h3><div class="field"><label>Tên sản phẩm<input name="name" value="${esc(p?.name||"")}" required></label></div><div class="field-grid"><div class="field"><label>Danh mục<input name="category" list="cats" value="${esc(p?.category||"")}" required></label></div><div class="field"><label>Badge tổng<input name="badge" placeholder="HOT / NEW / SALE" value="${esc(p?.badge||"")}"></label></div></div><datalist id="cats">${(settings.categories||[]).map(c=>`<option value="${esc(c)}">`).join("")}</datalist><div class="field"><label>Ảnh chính của sản phẩm<input id="productImageFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif"></label><div id="productPreview" class="preview">${p?.image?`<img src="${p.image}" alt="preview">`:`Chưa chọn ảnh`}</div></div><div class="field"><label>Mô tả<textarea name="description">${esc(p?.description||"")}</textarea></label></div></section>
+  <section class="design-card variant-builder-card"><div class="section-head"><div><h3>Các dòng / gói sản phẩm</h3><p class="muted">Ví dụ: Key 1 Tháng, Key 3 Tháng, Key 1 Năm. Mỗi dòng có thể có giá, ảnh, giao hàng và tồn kho riêng.</p></div><button type="button" class="btn primary" onclick="addVariantRow()">＋ Thêm dòng</button></div><div id="variantBuilder">${variantHtml}</div><div class="variant-note">Khách sẽ chọn một dòng trên trang sản phẩm trước khi thêm vào giỏ.</div></section><section class="design-card"><div class="form-actions"><span class="muted">${p?`ID ${p.id}`:"Sản phẩm mới"}</span><button class="btn primary">${p?"Lưu thay đổi":"Tạo sản phẩm"}</button></div></section></form>`;
+  const input=$("#productImageFile"),preview=$("#productPreview");input.onchange=async()=>{try{const d=await fileToData(input.files?.[0]);if(d){preview.dataset.image=d;preview.innerHTML=`<img src="${d}" alt="preview">`}}catch(e){toast(e.message);input.value=""}};bindVariantImageInputs();
+  $("#productForm").onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target);const variants=collectVariants();if(!variants.length){toast("Thêm ít nhất 1 dòng / gói có giá hợp lệ");return}const image=preview.dataset.image!==undefined?preview.dataset.image:(p?.image||"");const first=variants[0];const body={name:f.get("name"),category:f.get("category"),price:first.price,oldPrice:first.oldPrice,badge:f.get("badge"),delivery:first.delivery,description:f.get("description"),image,variants};try{if(id)await api(`/api/admin/products/${id}`,{method:"PUT",body:JSON.stringify(body)});else await api("/api/admin/products",{method:"POST",body:JSON.stringify(body)});toast(p?"Đã cập nhật sản phẩm":"Đã tạo sản phẩm");go("products")}catch(err){toast(err.message)}};
+}
 async function renderOrders(){cache.orders=await api("/api/admin/orders");$("#content").innerHTML=`<div class="panel"><div class="page-toolbar"><div class="muted">Cập nhật trạng thái đơn hàng.</div><div class="search"><input id="orderSearch" placeholder="Tìm ID đơn..." oninput="filterRows('orderList','orderSearch')"></div></div><div id="orderList" class="order-list">${cache.orders.map(o=>`<div class="order-row" data-search="${esc((o.id+" "+o.userId).toLowerCase())}"><div><b>${esc(o.id)}</b><div class="row-sub">${fmtDate(o.createdAt)} · User ${esc(o.userId)} · ${money(o.total)}</div><div class="row-sub">${o.items.map(i=>esc(i.name)+" ×"+i.qty).join(" · ")}</div></div><div class="row-actions"><span class="status ${esc(o.status)}">${esc(o.status)}</span><button class="btn small" onclick="changeOrderStatus('${esc(o.id)}')">Trạng thái</button></div></div>`).join("")||`<div class="empty">Chưa có đơn.</div>`}</div></div>`}
 async function changeOrderStatus(id){const status=prompt("Nhập trạng thái: paid / processing / completed / cancelled","processing");if(!status)return;try{await api(`/api/admin/orders/${encodeURIComponent(id)}`,{method:"PATCH",body:JSON.stringify({status})});toast("Đã cập nhật đơn");renderOrders()}catch(e){toast(e.message)}}
 async function renderTopups(){cache.topups=await api("/api/admin/topups");$("#content").innerHTML=`<div class="panel"><div class="page-toolbar"><div class="muted">Duyệt yêu cầu nạp tiền và cộng số dư.</div><div class="search"><input id="topupSearch" placeholder="Tìm mã nạp..." oninput="filterRows('topupList','topupSearch')"></div></div><div id="topupList" class="order-list">${cache.topups.map(t=>`<div class="topup-row" data-search="${esc((t.id+" "+t.userId).toLowerCase())}"><div><b>${esc(t.id)}</b><div class="row-sub">${fmtDate(t.createdAt)} · User ${esc(t.userId)}</div></div><div class="row-actions"><strong>${money(t.amount)}</strong><span class="status ${esc(t.status)}">${esc(t.status)}</span>${t.status==="pending"?`<button class="btn small" onclick="approveTopup('${esc(t.id)}')">Duyệt</button>`:""}</div></div>`).join("")||`<div class="empty">Chưa có yêu cầu nạp tiền.</div>`}</div></div>`}

@@ -111,6 +111,37 @@ function sanitizeImage(value) {
   return "";
 }
 
+function normalizeVariants(raw, fallback = {}) {
+  if (!Array.isArray(raw) || raw.length === 0) return [];
+  return raw.slice(0, 50).map((v, index) => ({
+    id: String(v?.id || crypto.randomUUID()),
+    name: String(v?.name ?? `Gói ${index + 1}`).trim().slice(0, 160) || `Gói ${index + 1}`,
+    price: Math.max(1, Number(v?.price) || Number(fallback.price) || 1),
+    oldPrice: Math.max(0, Number(v?.oldPrice) || 0),
+    delivery: String(v?.delivery ?? fallback.delivery ?? "Giao ngay").trim().slice(0, 120),
+    badge: String(v?.badge ?? "").trim().slice(0, 60),
+    image: sanitizeImage(v?.image ?? ""),
+    stock: v?.stock === "" || v?.stock === null || v?.stock === undefined ? null : Math.max(0, Number(v.stock) || 0),
+    sold: Math.max(0, Number(v?.sold) || 0)
+  }));
+}
+
+function productVariants(product) {
+  const list = normalizeVariants(product?.variants, product);
+  if (list.length) return list;
+  return [{
+    id: "default",
+    name: product?.name || "Gói mặc định",
+    price: Math.max(1, Number(product?.price) || 1),
+    oldPrice: Math.max(0, Number(product?.oldPrice) || 0),
+    delivery: product?.delivery || "Giao ngay",
+    badge: product?.badge || "",
+    image: product?.image || "",
+    stock: null,
+    sold: Number(product?.sold) || 0
+  }];
+}
+
 function sanitizeSettings(body, existing) {
   const next = { ...existing };
   const stringKeys = [
@@ -277,8 +308,22 @@ app.post("/api/orders", auth, (req, res) => {
     const p = db.products.find(x => x.id === Number(item.id));
     const qty = Math.max(1, Math.min(99, Number(item.qty) || 1));
     if (!p) return res.status(400).json({ error: "Có sản phẩm không còn tồn tại." });
-    total += Number(p.price) * qty;
-    normalized.push({ productId: p.id, name: p.name, price: p.price, qty });
+    const variants = productVariants(p);
+    const requestedId = String(item.variantId || "");
+    const variant = variants.find(v => v.id === requestedId) || variants[0];
+    if (!variant) return res.status(400).json({ error: "Gói sản phẩm không còn tồn tại." });
+    if (variant.stock !== null && variant.stock < qty) {
+      return res.status(400).json({ error: `Gói \"${variant.name}\" không đủ hàng.` });
+    }
+    total += Number(variant.price) * qty;
+    normalized.push({
+      productId: p.id,
+      variantId: variant.id,
+      name: p.name,
+      variantName: variant.name,
+      price: variant.price,
+      qty
+    });
   }
   const u = db.users.find(x => x.id === req.user.id);
   if (u.balance < total) return res.status(400).json({ error: "Số dư không đủ. Hãy nạp tiền trước." });
@@ -294,7 +339,13 @@ app.post("/api/orders", auth, (req, res) => {
   db.orders.push(order);
   normalized.forEach(i => {
     const p = db.products.find(x => x.id === i.productId);
-    if (p) p.sold = (p.sold || 0) + i.qty;
+    if (!p) return;
+    p.sold = (p.sold || 0) + i.qty;
+    const variant = Array.isArray(p.variants) ? p.variants.find(v => String(v.id) === String(i.variantId)) : null;
+    if (variant) {
+      variant.sold = (variant.sold || 0) + i.qty;
+      if (variant.stock !== null && variant.stock !== undefined) variant.stock = Math.max(0, Number(variant.stock) - i.qty);
+    }
   });
   saveDB(db);
   res.json({ order, user: publicUser(u) });
@@ -367,13 +418,16 @@ app.patch("/api/admin/orders/:id", auth, admin, (req, res) => {
 
 app.post("/api/admin/products", auth, admin, (req, res) => {
   const { name, category, price, oldPrice, description, imageClass, badge, delivery, image } = req.body;
-  if (!name || !category || Number(price) <= 0) return res.status(400).json({ error: "Thiếu tên, danh mục hoặc giá." });
+  if (!name || !category) return res.status(400).json({ error: "Thiếu tên hoặc danh mục." });
   const db = loadDB();
+  let variants = normalizeVariants(req.body.variants);
+  const basePrice = Number(price) > 0 ? Number(price) : Number(variants[0]?.price) || 0;
+  if (!basePrice && !variants.length) return res.status(400).json({ error: "Thêm ít nhất một dòng sản phẩm và giá hợp lệ." });
   const p = {
     id: Date.now(),
     name: String(name).trim(),
     category: String(category).trim(),
-    price: Number(price),
+    price: basePrice,
     oldPrice: Number(oldPrice) || 0,
     rating: 0,
     reviews: 0,
@@ -382,8 +436,25 @@ app.post("/api/admin/products", auth, admin, (req, res) => {
     delivery: delivery || "Giao ngay",
     description: description || "",
     imageClass: imageClass || "blue",
-    image: sanitizeImage(image)
+    image: sanitizeImage(image),
+    variants
   };
+  if (!p.variants.length) {
+    p.variants = [{
+      id: crypto.randomUUID(),
+      name: p.name,
+      price: p.price,
+      oldPrice: p.oldPrice,
+      delivery: p.delivery,
+      badge: p.badge,
+      image: p.image,
+      stock: null,
+      sold: 0
+    }];
+  }
+  p.price = Number(p.variants[0].price);
+  p.oldPrice = Number(p.variants[0].oldPrice) || 0;
+  p.delivery = p.variants[0].delivery || p.delivery;
   db.products.unshift(p);
   saveDB(db);
   res.json(p);
@@ -398,10 +469,18 @@ app.put("/api/admin/products/:id", auth, admin, (req, res) => {
     id: p.id,
     name: String(req.body.name ?? p.name).trim(),
     category: String(req.body.category ?? p.category).trim(),
-    price: Number(req.body.price ?? p.price),
-    oldPrice: Number(req.body.oldPrice ?? 0),
+    oldPrice: Number(req.body.oldPrice ?? p.oldPrice ?? 0),
     image: req.body.image === undefined ? p.image || "" : sanitizeImage(req.body.image)
   });
+  if (req.body.variants !== undefined) {
+    p.variants = normalizeVariants(req.body.variants, p);
+  } else {
+    p.variants = productVariants(p);
+  }
+  if (!p.variants.length) return res.status(400).json({ error: "Sản phẩm phải có ít nhất một dòng." });
+  p.price = Number(p.variants[0].price);
+  p.oldPrice = Number(p.variants[0].oldPrice) || 0;
+  p.delivery = p.variants[0].delivery || p.delivery || "Giao ngay";
   saveDB(db);
   res.json(p);
 });
