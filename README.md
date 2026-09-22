@@ -41,3 +41,7 @@ For a real deployment, set `ADMIN_EMAIL`, `ADMIN_PASSWORD` and `SESSION_SECRET` 
 ## Notes
 
 The project uses `data.json` for MVP persistence. For a real shop with real money, move users/orders/wallets to a database and use durable object/image storage. The current QR image is generated through QuickChart from the TOTP `otpauth://` URI; for production, self-host QR generation so the secret is not sent to a third-party image service.
+
+
+## Category navigation
+Clicking a category in the top navigation now filters the product list to that category and smoothly scrolls to the product section.

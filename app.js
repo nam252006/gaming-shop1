@@ -121,8 +121,23 @@ function openModal(html){$("#modalCard").innerHTML=html;$("#modal").classList.re
 function closeModal(){$("#modal").classList.add("hidden");$("#modal").setAttribute("aria-hidden","true")}
 function clearFilters(){currentCat="all";renderCategories();$("#search").value="";$("#sortSelect").value="default";applyHomeLayout();renderProducts()}
 function clearSearch(){$("#search").value="";renderProducts()}
-function filterCategory(cat){currentCat=cat;renderCategories();if($("#sortSelect"))$("#sortSelect").value="default";applyHomeLayout();renderProducts();scrollToProducts()}
-function scrollToProducts(){$("#products")?.scrollIntoView({behavior:"smooth",block:"start"})}
+function filterCategory(cat){
+  currentCat=cat;
+  renderCategories();
+  if($("#sortSelect"))$("#sortSelect").value="default";
+  applyHomeLayout();
+  renderProducts();
+  // Chờ layout ẩn/hiện section hoàn tất rồi mới cuộn để trình duyệt tính đúng vị trí.
+  requestAnimationFrame(()=>setTimeout(scrollToProducts,40));
+}
+function scrollToProducts(){
+  const target=$("#products");
+  if(!target)return;
+  const header=$(".site-header");
+  const offset=(header?.offsetHeight||0)+12;
+  const top=Math.max(0,target.getBoundingClientRect().top+window.scrollY-offset);
+  window.scrollTo({top,behavior:"smooth"});
+}
 function socialIcon(type){if(type==="messenger")return '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.7c-5.6 0-10 3.8-10 9 0 2.8 1.3 5.3 3.7 6.9v3.2l3.4-1.9c.9.3 1.9.5 2.9.5 5.6 0 9.9-3.8 9.9-8.7 0-5.2-4.3-9-9.9-9Zm.9 11.5-2.6-2.7-4.1 2.7 4.5-4.8 2.6 2.7 4.1-2.7-4.5 4.8Z"/></svg>';if(type==="discord")return '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.5 4.1a15.4 15.4 0 0 0-3.8-1.2l-.5 1.1a14.2 14.2 0 0 0-6.4 0l-.5-1.1A15.4 15.4 0 0 0 4.5 4.1C2.1 7.7 1.4 11.2 1.7 14.6a15.2 15.2 0 0 0 4.6 2.3l1.1-1.5c-.6-.2-1.2-.5-1.7-.8l.4-.3c3.2 1.5 6.7 1.5 9.9 0l.4.3c-.5.3-1.1.6-1.7.8l1.1 1.5a15.2 15.2 0 0 0 4.6-2.3c.4-4-.7-7.5-2.9-10.5Zm-9 8.4c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2Zm5 0c-1 0-1.8-.9-1.8-2s.8-2 1.8-2 1.8.9 1.8 2-.8 2-1.8 2Z"/></svg>';return '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.5C6.2 2.5 1.5 6.4 1.5 11.3c0 2.9 1.7 5.5 4.4 7.1v3.1l3.1-1.8c.9.3 1.9.4 3 .4 5.8 0 10.5-3.9 10.5-8.8S17.8 2.5 12 2.5Zm-4.6 11.2 3-3.2 2 1.7 3.1-3.2-2.9 3.2-2-1.7-3.2 3.2Z"/></svg>'}
 function renderFloatingSocials(){
   const el=$("#floatingSocials");if(!el)return;const list=[{type:settings.floatingSocial1Type,label:settings.floatingSocial1Label,url:settings.floatingSocial1Url},{type:settings.floatingSocial2Type,label:settings.floatingSocial2Label,url:settings.floatingSocial2Url}].filter(x=>x.url);
