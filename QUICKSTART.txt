@@ -1,19 +1,33 @@
-1. Mở CMD trong thư mục gaming-shop
-2. npm install (chỉ cần chạy lần đầu)
-3. npm start
-4. Mở http://localhost:3000
+GAMING SHOP — QUICK START
 
-Admin mặc định:
-Email: admin@example.com
-Password: change-this-password
+1) LOCAL
+   npm install
+   npm start
+   open http://localhost:3000
 
-Bạn có thể:
-- Admin > Sản phẩm > thêm/sửa sản phẩm và chọn ảnh PNG/JPG/WebP/GIF (tối đa 4MB/ảnh).
-- Admin > Giao diện shop > đổi tên shop, logo, favicon, hero/banner, màu sắc, danh mục, thông tin liên hệ, Discord/Facebook/Telegram.
-- Các tùy chỉnh được lưu trong data.json.
+2) PAGES
+   /         Shop
+   /cart     Cart / checkout
+   /account  Customer account
+   /admin    Separate admin panel
 
-Deploy Render:
-- Build Command: npm install
-- Start Command: npm start
-- Repository root nên chứa package.json, server.js và public/index.html.
-- Server có fallback nếu bạn lỡ upload index.html/app.js/styles.css ở repo root.
+3) ADMIN DEFAULT
+   Email: admin@example.com
+   Password: change-this-password
+
+4) ADMIN FEATURES
+   - Product images + multi-variant packages
+   - Category/group management
+   - Best sellers + recently viewed
+   - Shop colors + fonts + branding + homepage layout/order
+   - Two floating social links (Zalo/Messenger/Discord)
+   - Orders + top-ups
+
+5) SECURITY
+   Google Authenticator uses TOTP and can be enabled in Account -> Bảo mật.
+   Change ADMIN_PASSWORD and SESSION_SECRET before production.
+
+6) RENDER
+   Build: npm install
+   Start: npm start
+   Root Directory: blank when repo files are in the repository root.

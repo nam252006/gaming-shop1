@@ -7,34 +7,23 @@
   <meta id="metaDescription" name="description" content="Gaming marketplace">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link id="favicon" rel="icon" href="data:,">
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
 <div id="toast" class="toast"></div>
-
 <header class="site-header">
   <div class="container header-main">
     <a href="#" class="brand" onclick="event.preventDefault();window.scrollTo({top:0,behavior:'smooth'})">
       <span class="brand-badge" id="brandBadge">G</span>
-      <span class="brand-copy">
-        <strong id="shopName">Gaming Shop</strong>
-        <small id="shopTagline">Marketplace</small>
-      </span>
+      <span class="brand-copy"><strong id="shopName">Gaming Shop</strong><small id="shopTagline">Marketplace</small></span>
     </a>
-    <div class="search-wrap">
-      <span class="search-icon">⌕</span>
-      <input id="search" type="search" placeholder="Tìm game, sản phẩm, dịch vụ...">
-      <button class="search-clear hidden" id="searchClear" type="button" onclick="clearSearch()">×</button>
-    </div>
+    <div class="search-wrap"><span class="search-icon">⌕</span><input id="search" type="search" placeholder="Tìm game, sản phẩm, dịch vụ..."><button class="search-clear hidden" id="searchClear" type="button" onclick="clearSearch()">×</button></div>
     <div class="header-links">
       <button class="ghost-btn" onclick="showPage('orders')">Đơn hàng</button>
       <button class="ghost-btn" onclick="openCart()">Giỏ hàng <span id="cartCount" class="count-badge">0</span></button>
-      <button class="profile-btn" onclick="showAccount()">
-        <span class="avatar" id="avatarLetter">U</span>
-        <span class="profile-text"><b id="accountName">Khách</b><small id="accountBalance">Đăng nhập</small></span>
-      </button>
+      <button class="profile-btn" onclick="showAccount()"><span class="avatar" id="avatarLetter">U</span><span class="profile-text"><b id="accountName">Khách</b><small id="accountBalance">Đăng nhập</small></span></button>
     </div>
   </div>
   <div class="header-sub">
@@ -42,89 +31,51 @@
       <nav class="main-nav" id="categoryNav"></nav>
       <div class="quick-actions">
         <button onclick="openTopup()">Nạp tiền</button>
+        <button id="adminPanelBtn" class="admin-nav-btn hidden" onclick="openAdminPanel()">Admin Panel</button>
         <button onclick="scrollToProducts()">Khám phá</button>
       </div>
     </div>
   </div>
 </header>
 
-<main>
+<main id="homeMain">
   <section class="hero container" id="heroSection">
     <div class="hero-copy">
       <div class="eyebrow" id="heroEyebrow">GAMING MARKETPLACE</div>
       <h1 id="heroTitle">Chọn món bạn cần.<br><span>Mua nhanh, dùng ngay.</span></h1>
       <p id="heroSubtitle">Một marketplace sạch, dễ nhìn và tập trung vào sản phẩm.</p>
-      <div class="hero-actions">
-        <button class="primary-btn" id="heroButton" onclick="scrollToProducts()">Xem sản phẩm</button>
-        <button class="secondary-btn" id="heroSecondary" onclick="openTopup()">Nạp tiền vào ví</button>
-      </div>
-      <div class="hero-stats">
-        <div><strong>24/7</strong><span>Hỗ trợ</span></div>
-        <div><strong>Instant</strong><span>Giao tự động</span></div>
-        <div><strong>Secure</strong><span>Thanh toán an toàn</span></div>
-      </div>
+      <div class="hero-actions"><button class="primary-btn" id="heroButton" onclick="scrollToProducts()">Xem sản phẩm</button><button class="secondary-btn" id="heroSecondary" onclick="openTopup()">Nạp tiền vào ví</button></div>
+      <div class="hero-stats"><div><strong>24/7</strong><span>Hỗ trợ</span></div><div><strong>Instant</strong><span>Giao tự động</span></div><div><strong>Secure</strong><span>Thanh toán an toàn</span></div></div>
     </div>
-    <div class="hero-panel" id="heroPanel">
-      <div class="panel-top"><span>Danh mục nổi bật</span><span class="live-dot"></span></div>
-      <div class="feature-list" id="featureList"></div>
-      <div class="panel-foot">Tự thay logo, banner, màu sắc và nội dung trong Admin → Giao diện shop.</div>
-    </div>
+    <div class="hero-panel" id="heroPanel"><div class="panel-top"><span>Danh mục nổi bật</span><span class="live-dot"></span></div><div class="feature-list" id="featureList"></div><div class="panel-foot">Nhóm sản phẩm được quản lý trong Admin → Danh mục.</div></div>
   </section>
 
-  <section class="container product-section" id="products">
-    <div class="section-bar">
-      <div>
-        <div class="eyebrow">STORE</div>
-        <h2>Sản phẩm</h2>
-        <p id="resultMeta">Đang tải...</p>
-      </div>
-      <div class="toolbar">
-        <select id="sortSelect" onchange="renderProducts()">
-          <option value="default">Sắp xếp: Mặc định</option>
-          <option value="price-asc">Giá tăng dần</option>
-          <option value="price-desc">Giá giảm dần</option>
-          <option value="sold">Bán chạy</option>
-        </select>
-        <button class="filter-btn" onclick="clearFilters()">Đặt lại</button>
-      </div>
-    </div>
+  <section class="container home-section carousel-section" id="bestsellersSection">
+    <div class="section-heading"><div><div class="eyebrow">TOP PICKS</div><h2>🏆 Sản phẩm bán chạy</h2><p>Những sản phẩm có lượt mua cao nhất.</p></div><button class="section-link" onclick="showBestsellersAll()">Xem tất cả →</button></div>
+    <div id="bestsellersGrid" class="product-grid compact-grid"></div>
+  </section>
+
+  <section class="container product-section home-section" id="products">
+    <div class="section-bar"><div><div class="eyebrow">STORE</div><h2 id="productSectionTitle">Sản phẩm</h2><p id="resultMeta">Đang tải...</p></div><div class="toolbar"><select id="sortSelect" onchange="renderProducts()"><option value="default">Sắp xếp: Mặc định</option><option value="price-asc">Giá tăng dần</option><option value="price-desc">Giá giảm dần</option><option value="sold">Bán chạy</option></select><button class="filter-btn" onclick="clearFilters()">Đặt lại</button></div></div>
     <div id="productGrid" class="product-grid"></div>
   </section>
 
-  <section class="container trust-section">
+  <section class="container home-section carousel-section recent-section" id="recentSection">
+    <div class="section-heading"><div><div class="eyebrow">HISTORY</div><h2>↶ Đã xem gần đây</h2><p>Các sản phẩm bạn vừa mở trên trình duyệt này.</p></div><button class="section-link" onclick="clearRecentViewed()">Xóa lịch sử</button></div>
+    <div id="recentGrid" class="product-grid compact-grid"></div>
+  </section>
+
+  <section class="container trust-section home-section" id="trustSection">
     <div class="trust-card"><span>01</span><div><b>Ảnh sản phẩm rõ ràng</b><p>Mỗi sản phẩm có thể gắn ảnh riêng và xem trước ngay khi thêm.</p></div></div>
-    <div class="trust-card"><span>02</span><div><b>Shop theo thương hiệu của bạn</b><p>Logo, banner, màu sắc, tiêu đề và thông tin hỗ trợ đều có thể đổi.</p></div></div>
-    <div class="trust-card"><span>03</span><div><b>Quản lý ngay trên web</b><p>Admin có thể tạo, sửa, xóa sản phẩm và tùy chỉnh giao diện.</p></div></div>
+    <div class="trust-card"><span>02</span><div><b>Nhóm sản phẩm dễ tìm</b><p>Chọn danh mục trên thanh điều hướng để chỉ xem đúng nhóm hàng bạn cần.</p></div></div>
+    <div class="trust-card"><span>03</span><div><b>Tùy chỉnh toàn bộ shop</b><p>Logo, màu, chữ, banner, social và section đều có thể chỉnh trong Admin.</p></div></div>
   </section>
 </main>
 
-<footer class="site-footer">
-  <div class="container footer-main">
-    <div>
-      <div class="brand footer-brand"><span class="brand-badge" id="footerBrandBadge">G</span><span class="brand-copy"><strong id="footerShopName">Gaming Shop</strong><small id="footerShopTagline">Marketplace</small></span></div>
-      <p id="footerDescription">Marketplace gaming được thiết kế theo hướng sạch, dễ nhìn và tập trung vào sản phẩm.</p>
-    </div>
-    <div>
-      <h3>Hỗ trợ</h3>
-      <p id="supportEmail">support@yourshop.com</p>
-      <p id="supportPhone">09xx xxx xxx</p>
-      <p id="socialLinks" class="footer-links"></p>
-    </div>
-    <div>
-      <h3>Thông tin</h3>
-      <p>Chính sách</p>
-      <p>Quyền riêng tư</p>
-      <p>FAQ</p>
-    </div>
-  </div>
-  <div class="container footer-bottom">© 2026 <span id="copyrightName">Gaming Shop</span></div>
-</footer>
+<footer class="site-footer"><div class="container footer-main"><div><div class="brand footer-brand"><span class="brand-badge" id="footerBrandBadge">G</span><span class="brand-copy"><strong id="footerShopName">Gaming Shop</strong><small id="footerShopTagline">Marketplace</small></span></div><p id="footerDescription">Marketplace gaming được thiết kế theo hướng sạch, dễ nhìn và tập trung vào sản phẩm.</p></div><div><h3>Hỗ trợ</h3><p id="supportEmail">support@yourshop.com</p><p id="supportPhone">09xx xxx xxx</p><p id="socialLinks" class="footer-links"></p></div><div><h3>Thông tin</h3><p>Chính sách</p><p>Quyền riêng tư</p><p>FAQ</p></div></div><div class="container footer-bottom">© 2026 <span id="copyrightName">Gaming Shop</span></div></footer>
 
-<div id="modal" class="modal hidden" aria-hidden="true">
-  <div class="modal-backdrop" onclick="closeModal()"></div>
-  <section class="modal-card" id="modalCard" role="dialog" aria-modal="true"></section>
-</div>
-
+<div id="floatingSocials" class="floating-socials hidden"></div>
+<div id="modal" class="modal hidden" aria-hidden="true"><div class="modal-backdrop" onclick="closeModal()"></div><section class="modal-card" id="modalCard" role="dialog" aria-modal="true"></section></div>
 <script src="/app.js"></script>
 </body>
 </html>

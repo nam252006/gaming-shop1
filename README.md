@@ -1,36 +1,43 @@
-# Gaming Shop — Product Variants Edition
+# Gaming Shop — customizable marketplace
 
-Bản này mở rộng shop để mỗi sản phẩm có thể có nhiều **dòng / gói / thời hạn**.
+A Node.js + Express gaming marketplace starter with a separate customer account area and a dedicated Admin Panel.
 
-Ví dụ:
-- Delta Android Key 1 Tháng — 149.000đ
-- Delta iOS Key 1 Tháng — 149.000đ
-- Delta Key 3 Tháng — 299.000đ
-- Delta Key 1 Năm — 799.000đ
+## Included
 
-## Cách quản lý
+- Product catalog with product images and multiple variants/packages per product.
+- Category groups managed from Admin; clicking a category shows only that group.
+- "Sản phẩm bán chạy" section based on sold count.
+- "Đã xem gần đây" section stored per browser in localStorage.
+- Two configurable floating social buttons (Zalo / Messenger / Discord).
+- Global shop customization: brand, logo, hero, colors, fonts, footer/contact links, homepage sections and section order.
+- Separate `/admin` panel for products, orders, top-ups and shop design.
+- Customer `/account` area: profile, security, password, orders, balance history, activity, support and affiliate UI.
+- Google Authenticator 2FA with a real TOTP secret, QR setup, OTP confirmation and login challenge.
 
-Vào `/admin` → `Sản phẩm` → `Sửa` hoặc `Thêm sản phẩm`.
+## Run locally
 
-Trong phần **Các dòng / gói sản phẩm**, bạn có thể thêm bao nhiêu dòng cần thiết. Mỗi dòng có:
-- Tên dòng / gói
-- Giá
-- Giá cũ
-- Giao hàng
-- Badge
-- Tồn kho (để trống = không giới hạn)
-- Ảnh riêng cho dòng đó
+```bash
+npm install
+npm start
+```
 
-Khách hàng sẽ thấy các dòng dưới dạng lựa chọn radio trên trang chi tiết sản phẩm. Khi thêm vào giỏ, hệ thống lưu cả `productId` và `variantId`, nên các gói khác nhau có thể có giá và tồn kho khác nhau.
+Open `http://localhost:3000`.
 
-## Deploy
+## Admin
 
-Repository root giữ nguyên cấu trúc phẳng như bản trước:
+Default environment values:
 
-`package.json`, `server.js`, `index.html`, `app.js`, `styles.css`, `admin.html`, `admin.js`, `admin.css`, `data.json`.
+- Email: `admin@example.com`
+- Password: `change-this-password`
 
-Render:
-- Root Directory: để trống
+For a real deployment, set `ADMIN_EMAIL`, `ADMIN_PASSWORD` and `SESSION_SECRET` in the hosting environment.
+
+## Render
+
 - Build Command: `npm install`
 - Start Command: `npm start`
+- Root Directory: leave blank when the project files are at repository root.
 
+## Notes
+
+The project uses `data.json` for MVP persistence. For a real shop with real money, move users/orders/wallets to a database and use durable object/image storage. The current QR image is generated through QuickChart from the TOTP `otpauth://` URI; for production, self-host QR generation so the secret is not sent to a third-party image service.

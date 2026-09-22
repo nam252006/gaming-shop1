@@ -13,7 +13,53 @@
       "badge": "Mới",
       "delivery": "Giao ngay",
       "description": "Mobile gaming utility. Demo product — replace with your real product information.",
-      "imageClass": "violet"
+      "imageClass": "violet",
+      "variants": [
+        {
+          "id": "delta-android-1m",
+          "name": "Delta Android Key 1 Tháng",
+          "price": 149000,
+          "oldPrice": 0,
+          "delivery": "Giao ngay",
+          "badge": "",
+          "image": "",
+          "stock": null,
+          "sold": 19
+        },
+        {
+          "id": "delta-ios-1m",
+          "name": "Delta iOS Key 1 Tháng",
+          "price": 149000,
+          "oldPrice": 0,
+          "delivery": "Giao ngay",
+          "badge": "",
+          "image": "",
+          "stock": null,
+          "sold": 0
+        },
+        {
+          "id": "delta-android-3m",
+          "name": "Delta Android Key 3 Tháng",
+          "price": 299000,
+          "oldPrice": 349000,
+          "delivery": "Giao ngay",
+          "badge": "HOT",
+          "image": "",
+          "stock": null,
+          "sold": 0
+        },
+        {
+          "id": "delta-android-1y",
+          "name": "Delta Android Key 1 Năm",
+          "price": 799000,
+          "oldPrice": 999000,
+          "delivery": "Giao ngay",
+          "badge": "SALE",
+          "image": "",
+          "stock": null,
+          "sold": 0
+        }
+      ]
     },
     {
       "id": 2,
@@ -160,6 +206,28 @@
       "Externals",
       "Cloud Phone",
       "Services"
+    ],
+    "fontBody": "DM Sans",
+    "fontHeading": "Space Grotesk",
+    "floatingSocial1Type": "zalo",
+    "floatingSocial1Label": "Zalo",
+    "floatingSocial1Url": "",
+    "floatingSocial2Type": "messenger",
+    "floatingSocial2Label": "Messenger",
+    "floatingSocial2Url": "",
+    "sections": {
+      "hero": true,
+      "bestsellers": true,
+      "products": true,
+      "recent": true,
+      "trust": true
+    },
+    "homeOrder": [
+      "hero",
+      "bestsellers",
+      "products",
+      "recent",
+      "trust"
     ]
   }
 }
