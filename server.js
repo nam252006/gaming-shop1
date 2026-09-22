@@ -44,14 +44,27 @@ app.use(express.urlencoded({ extended: true }));
 
 const PUBLIC_DIR = path.join(__dirname, "public");
 const HAS_PUBLIC_APP = fs.existsSync(path.join(PUBLIC_DIR, "index.html"));
+
+// Serve the frontend from either /public (preferred) or the repository root.
 if (HAS_PUBLIC_APP) {
   app.use(express.static(PUBLIC_DIR));
 } else {
-  // Graceful fallback for repositories where frontend files were uploaded to repo root.
-  app.get("/styles.css", (req, res) => res.sendFile(path.join(__dirname, "styles.css")));
-  app.get("/app.js", (req, res) => res.sendFile(path.join(__dirname, "app.js")));
-  app.get("/index.html", (req, res) => res.sendFile(path.join(__dirname, "index.html")));
+  const rootFile = (name) => (req, res) => res.sendFile(path.join(__dirname, name));
+  app.get("/styles.css", rootFile("styles.css"));
+  app.get("/app.js", rootFile("app.js"));
+  app.get("/index.html", rootFile("index.html"));
+  app.get("/admin.css", rootFile("admin.css"));
+  app.get("/admin.js", rootFile("admin.js"));
+  app.get("/admin.html", rootFile("admin.html"));
 }
+
+// IMPORTANT: this must be registered before the SPA fallback below,
+// otherwise /admin would incorrectly return the shop homepage.
+const ADMIN_FILE = HAS_PUBLIC_APP ? path.join(PUBLIC_DIR, "admin.html") : path.join(__dirname, "admin.html");
+app.get(["/admin", "/admin/"], (req, res) => {
+  if (fs.existsSync(ADMIN_FILE)) return res.sendFile(ADMIN_FILE);
+  res.status(404).send("Admin panel not found.");
+});
 
 function loadDB() {
   try {
